@@ -1,6 +1,6 @@
 FROM anapsix/alpine-java
 MAINTAINER ViZix "service@mojix.com"
-
+USER root
 RUN apk add --update unzip wget curl docker jq openssh coreutils
 
 ENV HADOOP_VERSION="2.7.3"
