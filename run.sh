@@ -1,5 +1,11 @@
 #!/bin/bash
 
-ls -la $HADOOP_HOME
+ls -la $HADOOP_PREFIX
 
-$HADOOP_HOME/sbin/start-dfs.sh
+echo Starting ssh server
+/usr/sbin/sshd
+
+# Start the services.
+source $HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
+$HADOOP_PREFIX/sbin/start-dfs.sh
+$HADOOP_PREFIX/sbin/start-yarn.sh
