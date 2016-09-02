@@ -1,7 +1,7 @@
 FROM anapsix/alpine-java
 MAINTAINER ViZix "service@mojix.com"
 USER root
-RUN apk add --update unzip wget curl docker jq openssh coreutils
+RUN apk add --update unzip wget curl docker jq openssh rsync coreutils
 
 # passwordless ssh
 RUN ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_ed25519_key
@@ -20,7 +20,7 @@ RUN echo "net.ipv6.conf.all.disable_ipv6=1" >> /etc/sysctl.conf
 # Download Hadoop 2.7.3
 ENV HADOOP_VERSION="2.7.3"
 ADD download-hadoop.sh /tmp/download-hadoop.sh
-RUN /tmp/download-hadoop.sh && \
+CMD /tmp/download-hadoop.sh && \
     gunzip /tmp/hadoop-${HADOOP_VERSION}.tar.gz && \
     tar -xf /tmp/hadoop-${HADOOP_VERSION}.tar -C /opt && \
     rm /tmp/hadoop-${HADOOP_VERSION}.tar
@@ -34,7 +34,11 @@ ENV HADOOP_MAPRED_HOME=$HADOOP_PREFIX
 ENV HADOOP_YARN_HOME=$HADOOP_PREFIX
 ENV HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
 ENV YARN_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
-RUN mkdir $HADOOP_PREFIX/logs
+
+CMD mkdir $HADOOP_PREFIX/input $HADOOP_PREFIX/logs && \
+	CP $HADOOP_PREFIX/etc/hadoop/*.xml $HADOOP_PREFIX/input && \
+	RM $HADOOP_PREFIX/etc/hadoop/core-site.xml $HADOOP_PREFIX/etc/hadoop/hdfs-site.xml && \
+	CHMOD +x $HADOOP_PREFIX/etc/hadoop/*.sh
 
 # Copy the custom configurations.
 ADD core-site.xml $HADOOP_PREFIX/etc/hadoop
@@ -44,11 +48,11 @@ ADD start-dfs.sh $HADOOP_PREFIX/sbin
 ADD start-yarn.sh $HADOOP_PREFIX/sbin
 
 # Create a temporary area for Hadoop file system
-RUN mkdir /root/hadoopfs
-RUN mkdir /root/hadoopfs/tmp
+CMD mkdir /root/hadoopfs
+CMD mkdir /root/hadoopfs/tmp
 
 # Format the HDFS filesystem using the NameNode.
-RUN $HADOOP_PREFIX/bin/hadoop namenode -format
+CMD $HADOOP_PREFIX/bin/hadoop namenode -format
 
 ADD ssh_config /root/.ssh/config
 RUN chmod 600 /root/.ssh/config
